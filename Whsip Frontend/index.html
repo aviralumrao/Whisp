@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Whisp — Real-time Chat</title>
+
+  <!-- External Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- SockJS and STOMP Client Protocol Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+
+  <!-- Vanilla CSS Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="app-height">
+
+  <!-- Toast Banner -->
+  <div id="toastBanner" class="toast-banner">
+    <div id="toastContent" class="toast-content glass-panel">
+      <div class="toast-message-wrap">
+        <i id="toastIcon" class="fa-solid fa-circle-info"></i>
+        <span id="toastText">Notification message</span>
+      </div>
+      <button type="button" onclick="hideToast()" class="toast-close-btn" aria-label="Close notification">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Join Screen -->
+  <div id="joinScreen" class="join-screen">
+    <div class="join-card glass-panel animate-fade-in-up">
+      <div class="join-glow-orb-top"></div>
+      <div class="join-glow-orb-bottom"></div>
+
+      <div class="join-logo-badge">
+        <i class="fa-solid fa-comment-dots"></i>
+      </div>
+
+      <h1 class="join-title">Whisp</h1>
+      <p class="join-subtitle">Minimalist, lightning-fast real-time chat (100% WebSocket)</p>
+
+      <form id="joinForm" onsubmit="handleJoin(event)" class="join-form">
+        <div class="form-group">
+          <label for="usernameInput" class="form-label">Your Display Name</label>
+          <div class="input-icon-wrapper">
+            <span class="input-icon">
+              <i class="fa-solid fa-user"></i>
+            </span>
+            <input
+              type="text"
+              id="usernameInput"
+              required
+              maxlength="25"
+              placeholder="e.g. Alice, Bob, Charlie"
+              class="app-input"
+              autocomplete="off"
+              autofocus
+            />
+          </div>
+        </div>
+
+        <button type="submit" class="btn-primary">
+          <span>Join Chat</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </form>
+
+      <div class="join-footer">
+        <span>Server Endpoint:</span>
+        <button type="button" onclick="toggleServerModal()" class="server-link">
+          <span id="displayBaseUrl">https://whisp-app.duckdns.org</span>
+          <i class="fa-solid fa-gear"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chat Screen -->
+  <div id="chatScreen" class="chat-screen hidden">
+    <div class="chat-card">
+
+      <!-- Header -->
+      <header class="chat-header glass-panel">
+        <div class="header-left">
+          <div class="header-logo">W</div>
+          <div>
+            <div class="header-info-title-row">
+              <h2 class="header-title">Whisp</h2>
+              <span class="user-badge">
+                <i class="fa-solid fa-circle-user"></i>
+                <span id="currentUserName">Username</span>
+              </span>
+            </div>
+            <div>
+              <span id="statusPill" class="status-pill status-connecting">
+                <span id="statusDot" class="status-dot"></span>
+                <span id="statusText">Connecting...</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <button
+            type="button"
+            onclick="toggleServerModal()"
+            title="Configure Server API"
+            class="btn-icon-action"
+          >
+            <i class="fa-solid fa-sliders"></i>
+          </button>
+          <button
+            type="button"
+            onclick="leaveChat()"
+            title="Leave Chat Session"
+            class="btn-leave"
+          >
+            <i class="fa-solid fa-right-from-bracket"></i>
+            <span>Leave</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Message Feed Container -->
+      <main id="messageContainer" class="message-container">
+        <!-- Load More Button -->
+        <div id="loadMoreContainer" class="load-more-wrap hidden">
+          <button
+            id="loadMoreBtn"
+            type="button"
+            onclick="loadOlderMessages()"
+            class="btn-load-more"
+          >
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            <span>Load older messages</span>
+          </button>
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="empty-state">
+          <div class="empty-icon-wrap">
+            <i class="fa-regular fa-comments"></i>
+          </div>
+          <p class="empty-title">No messages in Whisp room yet</p>
+          <p class="empty-subtitle">Send a message below to kick off the conversation!</p>
+        </div>
+
+        <!-- Dynamic Message List -->
+        <div id="messageList" class="message-list"></div>
+      </main>
+
+      <!-- Scroll-to-Bottom Button -->
+      <button
+        id="scrollBottomBtn"
+        type="button"
+        onclick="scrollToBottom(true)"
+        class="btn-scroll-bottom"
+        title="Scroll to latest message"
+      >
+        <i class="fa-solid fa-arrow-down"></i>
+      </button>
+
+      <!-- Message Input Footer -->
+      <footer class="chat-footer">
+        <form id="messageForm" onsubmit="sendMessage(event)" class="message-form">
+          <div class="input-container">
+            <input
+              type="text"
+              id="messageInput"
+              placeholder="Type a whisp..."
+              class="chat-input"
+              autocomplete="off"
+            />
+          </div>
+          <button type="submit" id="sendBtn" class="btn-send">
+            <span>Send</span>
+            <i class="fa-solid fa-paper-plane"></i>
+          </button>
+        </form>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Edit Message Modal -->
+  <div id="editModal" class="modal-overlay hidden">
+    <div class="modal-card glass-panel animate-fade-in-up">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          <i class="fa-solid fa-pen-to-square"></i>
+          <span>Edit Whisp</span>
+        </h3>
+        <button type="button" onclick="closeEditModal()" class="modal-close-btn" aria-label="Close edit modal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="editForm" onsubmit="handleEditSubmit(event)">
+        <div class="form-group">
+          <label for="editContentInput" class="form-label">Message Content</label>
+          <textarea
+            id="editContentInput"
+            required
+            rows="3"
+            class="modal-textarea"
+          ></textarea>
+          <p class="modal-notice">
+            <i class="fa-solid fa-clock"></i>
+            <span>Messages can only be edited within 1 minute of sending.</span>
+          </p>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" onclick="closeEditModal()" class="btn-secondary">
+            Cancel
+          </button>
+          <button type="submit" id="saveEditBtn" class="btn-modal-confirm">
+            <i class="fa-solid fa-check"></i>
+            <span>Save Changes</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Server Config Modal -->
+  <div id="serverModal" class="modal-overlay hidden">
+    <div class="modal-card glass-panel animate-fade-in-up">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          <i class="fa-solid fa-server"></i>
+          <span>Backend Server Endpoint</span>
+        </h3>
+        <button type="button" onclick="toggleServerModal()" class="modal-close-btn" aria-label="Close server modal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="form-group">
+        <label for="baseUrlInput" class="form-label">Base Host URL</label>
+        <input
+          type="text"
+          id="baseUrlInput"
+          value="https://whisp-app.duckdns.org"
+          class="app-input"
+          style="padding-left: 14px;"
+          placeholder="https://whisp-app.duckdns.org"
+        />
+      </div>
+
+      <div class="server-endpoints-box">
+        <div class="endpoint-row">
+          <span class="endpoint-label">SockJS:</span>
+          <span class="endpoint-val">/ws</span>
+        </div>
+        <div class="endpoint-row">
+          <span class="endpoint-label">Chat:</span>
+          <span class="endpoint-val">/app/chat &rarr; /topic/messages</span>
+        </div>
+        <div class="endpoint-row">
+          <span class="endpoint-label">History:</span>
+          <span class="endpoint-val">/app/history &rarr; /topic/history</span>
+        </div>
+        <div class="endpoint-row">
+          <span class="endpoint-label">Edit:</span>
+          <span class="endpoint-val">/app/edit &rarr; /topic/edit</span>
+        </div>
+        <div class="endpoint-row">
+          <span class="endpoint-label">Delete:</span>
+          <span class="endpoint-val">/app/delete &rarr; /topic/delete</span>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onclick="saveServerConfig()"
+        class="btn-primary btn-full"
+      >
+        Save & Connect
+      </button>
+    </div>
+  </div>
+
+  <!-- Vanilla JS Script -->
+  <script src="script.js"></script>
+</body>
+</html>
