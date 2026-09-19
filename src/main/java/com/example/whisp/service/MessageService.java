@@ -22,7 +22,7 @@ public class MessageService {
 
 	public Page<MessageDTO> getAllMessages(int page, int size) {
 		Pageable pageable = PageRequest.of(page, size);
-		return repository.findAllByOrderByTimestampAsc(pageable)
+		return repository.findAllByOrderByTimestampDesc(pageable)
 				.map(messageMapper::toDTO);
 	}
 

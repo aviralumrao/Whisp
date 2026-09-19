@@ -9,5 +9,5 @@ import java.util.UUID;
 
 public interface Repository extends JpaRepository<Message, UUID> {
 
-	Page<Message> findAllByOrderByTimestampAsc(Pageable pageable);
+	Page<Message> findAllByOrderByTimestampDesc(Pageable pageable);
 }
