@@ -22,4 +22,7 @@ public class MessageDTO {
 	private String content;
 
 	private LocalDateTime timestamp;
+
+	private Integer page;
+	private Integer size;
 }
