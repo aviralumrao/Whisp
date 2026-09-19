@@ -36,4 +36,15 @@ public class MessageService {
 				.orElseThrow(() -> new RuntimeException("Message not found with id = " + id));
 		return messageMapper.toDTO(message);
 	}
+
+	public void deleteMessage(UUID id, String sender) {
+		Message message = repository.findById(id)
+				.orElseThrow(() -> new RuntimeException("Message not found with id = " + id));
+
+		if (!message.getSender().equals(sender)) {
+			throw new RuntimeException("Unauthorized: You can only delete your own messages");
+		}
+
+		repository.delete(message);
+	}
 }
