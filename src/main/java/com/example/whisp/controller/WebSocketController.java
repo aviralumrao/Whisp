@@ -1,7 +1,7 @@
 package com.example.whisp.controller;
 
 import com.example.whisp.dto.MessageDTO;
-import com.example.whisp.service.MessageService;
+import com.example.whisp.interfaces.MessageServiceInterface;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -12,7 +12,7 @@ import org.springframework.stereotype.Controller;
 @RequiredArgsConstructor
 public class WebSocketController {
 
-	private final MessageService messageService;
+	private final MessageServiceInterface messageService;
 	private final SimpMessagingTemplate messagingTemplate;
 
 	@MessageMapping("/chat")

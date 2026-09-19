@@ -1,6 +1,7 @@
 package com.example.whisp.service;
 
 import com.example.whisp.dto.MessageDTO;
+import com.example.whisp.interfaces.MessageServiceInterface;
 import com.example.whisp.mapper.MessageMapper;
 import com.example.whisp.model.Message;
 import com.example.whisp.repository.Repository;
@@ -15,7 +16,7 @@ import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
-public class MessageService {
+public class MessageService implements MessageServiceInterface {
 
 	private final Repository repository;
 	private final MessageMapper messageMapper;
