@@ -1,7 +1,7 @@
 package com.example.whisp.controller;
 
 import com.example.whisp.dto.MessageDTO;
-import com.example.whisp.service.Service;
+import com.example.whisp.service.MessageService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -24,23 +24,23 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class Controller {
 
-	private final Service service;
+	private final MessageService messageService;
 
 	@GetMapping
 	public ResponseEntity<Page<MessageDTO>> getAllMessages(
 			@RequestParam(defaultValue = "0") int page,
 			@RequestParam(defaultValue = "20") int size) {
-		return ResponseEntity.ok(service.getAllMessages(page, size));
+		return ResponseEntity.ok(messageService.getAllMessages(page, size));
 	}
 
 	@PostMapping
 	public ResponseEntity<MessageDTO> sendMessage(@Valid @RequestBody MessageDTO messageDTO){
-		MessageDTO saved = service.sendMessage(messageDTO);
+		MessageDTO saved = messageService.sendMessage(messageDTO);
 		return ResponseEntity.status(HttpStatus.CREATED).body(saved);
 	}
 
 	@GetMapping("/{id}")
 	public ResponseEntity<MessageDTO> getMessageById(@PathVariable UUID id){
-		return ResponseEntity.ok(service.getMessageById(id));
+		return ResponseEntity.ok(messageService.getMessageById(id));
 	}
 }

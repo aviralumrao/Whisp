@@ -8,12 +8,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
 
 import java.util.UUID;
 
-@org.springframework.stereotype.Service
+@Service
 @RequiredArgsConstructor
-public class Service {
+public class MessageService {
 
 	private final Repository repository;
 	private final MessageMapper messageMapper;
