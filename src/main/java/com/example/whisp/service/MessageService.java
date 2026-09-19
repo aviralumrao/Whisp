@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -47,4 +48,23 @@ public class MessageService {
 
 		repository.delete(message);
 	}
+
+
+	public MessageDTO editMessage(UUID id, MessageDTO messageDTO) {
+		Message message = repository.findById(id)
+				.orElseThrow(() -> new RuntimeException("Message not found"));
+
+		if (!message.getSender().equals(messageDTO.getSender())) {
+			throw new RuntimeException("Unauthorized");
+		}
+
+		if (message.getTimestamp().isBefore(LocalDateTime.now().minusMinutes(1))) {
+			throw new RuntimeException("Cannot edit");
+		}
+
+		message.setContent(messageDTO.getContent());
+		Message updated = repository.save(message);
+		return messageMapper.toDTO(updated);
+	}
+
 }
