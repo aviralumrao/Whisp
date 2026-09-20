@@ -1,6 +1,9 @@
 package com.example.whisp.service;
 
 import com.example.whisp.dto.MessageDTO;
+import com.example.whisp.exception.BadRequestException;
+import com.example.whisp.exception.ResourceNotFoundException;
+import com.example.whisp.exception.UnauthorizedException;
 import com.example.whisp.interfaces.MessageServiceInterface;
 import com.example.whisp.mapper.MessageMapper;
 import com.example.whisp.model.Message;
@@ -35,16 +38,16 @@ public class MessageService implements MessageServiceInterface {
 
 	public MessageDTO getMessageById(UUID id) {
 		Message message = repository.findById(id)
-				.orElseThrow(() -> new RuntimeException("Message not found with id = " + id));
+				.orElseThrow(() -> new ResourceNotFoundException("Message not found with id = " + id));
 		return messageMapper.toDTO(message);
 	}
 
 	public void deleteMessage(UUID id, String sender) {
 		Message message = repository.findById(id)
-				.orElseThrow(() -> new RuntimeException("Message not found with id = " + id));
+				.orElseThrow(() -> new ResourceNotFoundException("Message not found with id = " + id));
 
 		if (!message.getSender().equals(sender)) {
-			throw new RuntimeException("Unauthorized: You can only delete your own messages");
+			throw new UnauthorizedException("Unauthorized: You can only delete your own messages");
 		}
 
 		repository.delete(message);
@@ -53,14 +56,14 @@ public class MessageService implements MessageServiceInterface {
 
 	public MessageDTO editMessage(UUID id, MessageDTO messageDTO) {
 		Message message = repository.findById(id)
-				.orElseThrow(() -> new RuntimeException("Message not found"));
+				.orElseThrow(() -> new ResourceNotFoundException("Message not found"));
 
 		if (!message.getSender().equals(messageDTO.getSender())) {
-			throw new RuntimeException("Unauthorized");
+			throw new UnauthorizedException("Unauthorized");
 		}
 
 		if (message.getTimestamp().isBefore(LocalDateTime.now().minusMinutes(1))) {
-			throw new RuntimeException("Cannot edit");
+			throw new BadRequestException("Cannot edit message");
 		}
 
 		message.setContent(messageDTO.getContent());
