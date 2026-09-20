@@ -113,7 +113,10 @@ function enterChatRoom() {
   state.messagesMap.clear();
   messageList.innerHTML = '';
 
-  // Connect WebSocket (STOMP) - history will be fetched automatically via WS upon connect
+  // Fetch initial message history via HTTP REST
+  fetchHistory(0);
+
+  // Connect WebSocket (STOMP) for real-time messages, edits, and deletions
   connectWebSocket();
 
   setTimeout(() => messageInput && messageInput.focus(), 150);
@@ -187,17 +190,7 @@ function onStompConnected() {
     }
   });
 
-  // 2. Subscribe to message history/pagination
-  state.stompClient.subscribe('/topic/history', (payload) => {
-    try {
-      const data = JSON.parse(payload.body);
-      handleHistoryPayload(data);
-    } catch (e) {
-      console.error('Failed to parse history payload:', e);
-    }
-  });
-
-  // 3. Subscribe to real-time edits
+  // 2. Subscribe to real-time edits
   state.stompClient.subscribe('/topic/edit', (payload) => {
     try {
       const updatedMsg = JSON.parse(payload.body);
@@ -208,7 +201,7 @@ function onStompConnected() {
     }
   });
 
-  // 4. Subscribe to real-time deletions
+  // 3. Subscribe to real-time deletions
   state.stompClient.subscribe('/topic/delete', (payload) => {
     try {
       let deletedId = payload.body;
@@ -221,8 +214,15 @@ function onStompConnected() {
     }
   });
 
-  // Request initial history page via WebSocket
-  requestHistoryViaWebSocket(0);
+  // 4. Subscribe to real-time errors
+  state.stompClient.subscribe('/topic/errors', (payload) => {
+    try {
+      const errorMsg = JSON.parse(payload.body);
+      showToast(errorMsg.message || 'An error occurred', 'error');
+    } catch (e) {
+      console.error('Failed to parse error payload:', e);
+    }
+  });
 }
 
 function onStompError(error) {
@@ -253,19 +253,28 @@ function disconnectWebSocket() {
   }
 }
 
-// --- WebSocket Pagination / History Handling ---
-function requestHistoryViaWebSocket(page = 0) {
-  if (!state.stompClient || !state.stompClient.connected) return;
-
+// --- HTTP REST Pagination / History Handling ---
+async function fetchHistory(page = 0) {
   state.isLoadingMore = true;
-  if (page > 0) {
+  if (page > 0 && loadMoreBtn) {
     loadMoreBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Loading...</span>';
   }
 
-  state.stompClient.send('/app/history', {}, JSON.stringify({
-    page: page,
-    size: state.pageSize
-  }));
+  try {
+    const response = await fetch(`${state.baseUrl}/api/messages?page=${page}&size=${state.pageSize}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error ${response.status}`);
+    }
+    const data = await response.json();
+    handleHistoryPayload(data);
+  } catch (error) {
+    console.error('Failed to fetch message history:', error);
+    showToast('Failed to load message history', 'error');
+    state.isLoadingMore = false;
+    if (loadMoreBtn) {
+      loadMoreBtn.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i><span>Load older messages</span>';
+    }
+  }
 }
 
 function handleHistoryPayload(data) {
@@ -304,13 +313,15 @@ function handleHistoryPayload(data) {
   }
 
   state.isLoadingMore = false;
-  loadMoreBtn.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i><span>Load older messages</span>';
+  if (loadMoreBtn) {
+    loadMoreBtn.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i><span>Load older messages</span>';
+  }
   updateEmptyState();
 }
 
 function loadOlderMessages() {
   if (state.isLoadingMore || state.isLastPage) return;
-  requestHistoryViaWebSocket(state.currentPage + 1);
+  fetchHistory(state.currentPage + 1);
 }
 
 function updateLoadMoreVisibility() {

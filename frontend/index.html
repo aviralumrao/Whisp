@@ -45,7 +45,7 @@
       </div>
 
       <h1 class="join-title">Whisp</h1>
-      <p class="join-subtitle">Minimalist, lightning-fast real-time chat (100% WebSocket)</p>
+      <p class="join-subtitle">Minimalist, lightning-fast real-time chat</p>
 
       <form id="joinForm" onsubmit="handleJoin(event)" class="join-form">
         <div class="form-group">
@@ -58,7 +58,7 @@
               type="text"
               id="usernameInput"
               required
-              maxlength="25"
+              maxlength="20"
               placeholder="e.g. Alice, Bob, Charlie"
               class="app-input"
               autocomplete="off"
@@ -175,6 +175,7 @@
             <input
               type="text"
               id="messageInput"
+              maxlength="400"
               placeholder="Type a whisp..."
               class="chat-input"
               autocomplete="off"
@@ -208,6 +209,7 @@
           <textarea
             id="editContentInput"
             required
+            maxlength="400"
             rows="3"
             class="modal-textarea"
           ></textarea>
@@ -257,16 +259,16 @@
 
       <div class="server-endpoints-box">
         <div class="endpoint-row">
-          <span class="endpoint-label">SockJS:</span>
+          <span class="endpoint-label">History (HTTP):</span>
+          <span class="endpoint-val">GET /api/messages</span>
+        </div>
+        <div class="endpoint-row">
+          <span class="endpoint-label">WebSocket:</span>
           <span class="endpoint-val">/ws</span>
         </div>
         <div class="endpoint-row">
           <span class="endpoint-label">Chat:</span>
           <span class="endpoint-val">/app/chat &rarr; /topic/messages</span>
-        </div>
-        <div class="endpoint-row">
-          <span class="endpoint-label">History:</span>
-          <span class="endpoint-val">/app/history &rarr; /topic/history</span>
         </div>
         <div class="endpoint-row">
           <span class="endpoint-label">Edit:</span>
