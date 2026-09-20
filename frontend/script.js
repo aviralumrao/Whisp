@@ -8,7 +8,7 @@ const state = {
   currentUser: localStorage.getItem('whisp_username') || '',
   baseUrl: localStorage.getItem('whisp_base_url') || 'https://whisp-app.duckdns.org',
   stompClient: null,
-  sockJS: null,
+  socket: null,
   messagesMap: new Map(), // UUID -> Message Object
   currentPage: 0,
   pageSize: 20,
@@ -145,17 +145,21 @@ function connectWebSocket() {
   }
 
   updateStatusUI('connecting');
-  const wsEndpoint = `${state.baseUrl}/ws`;
+
+  // Convert http/https base URL to ws/wss URL
+  const wsProtocol = state.baseUrl.startsWith('https') ? 'wss:' : 'ws:';
+  const host = state.baseUrl.replace(/^https?:\/\//, '');
+  const wsEndpoint = `${wsProtocol}//${host}/ws`;
 
   try {
-    state.sockJS = new SockJS(wsEndpoint);
-    state.stompClient = Stomp.over(state.sockJS);
+    state.socket = new WebSocket(wsEndpoint);
+    state.stompClient = Stomp.over(state.socket);
     state.stompClient.debug = null; // Disable verbose console debug logs
 
     state.stompClient.connect({}, onStompConnected, onStompError);
   } catch (e) {
-    console.error('SockJS initialization failed:', e);
-    onStompError('SockJS init failure');
+    console.error('Native WebSocket initialization failed:', e);
+    onStompError('WebSocket init failure');
   }
 }
 
