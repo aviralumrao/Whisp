@@ -2,6 +2,7 @@ package com.example.whisp.controller;
 
 import com.example.whisp.dto.MessageDTO;
 import com.example.whisp.interfaces.MessageServiceInterface;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -16,7 +17,7 @@ public class WebSocketController {
 	private final SimpMessagingTemplate messagingTemplate;
 
 	@MessageMapping("/chat")
-	public void sendMessage(MessageDTO messageDTO) {
+	public void sendMessage(@Valid MessageDTO messageDTO) {
 		MessageDTO saved = messageService.sendMessage(messageDTO);
 		messagingTemplate.convertAndSend("/topic/messages", saved);
 	}
@@ -30,7 +31,7 @@ public class WebSocketController {
 	}
 
 	@MessageMapping("/edit")
-	public void editMessage(MessageDTO messageDTO) {
+	public void editMessage(@Valid MessageDTO messageDTO) {
 		MessageDTO updated = messageService.editMessage(messageDTO.getId(), messageDTO);
 		messagingTemplate.convertAndSend("/topic/edit", updated);
 	}

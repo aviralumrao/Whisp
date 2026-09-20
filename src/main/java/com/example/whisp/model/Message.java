@@ -9,6 +9,8 @@ import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import jakarta.persistence.Column;
+import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -25,11 +27,16 @@ public class Message {
 	private UUID id;
 
 	@NotNull
+	@Size(max = 20)
+	@Column(length = 20, nullable = false)
 	private String sender;
 
 	@NotNull
+	@Size(max = 400)
+	@Column(length = 400, nullable = false)
 	private String content;
 
 	@NotNull
+	@Column(nullable = false)
 	private LocalDateTime timestamp;
 }

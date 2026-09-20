@@ -14,8 +14,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.util.UUID;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +31,9 @@ public class MessageService implements MessageServiceInterface {
 	}
 
 	public MessageDTO sendMessage(MessageDTO messageDTO) {
+		validateSender(messageDTO.getSender());
+		validateContent(messageDTO.getContent());
+
 		Message message = messageMapper.toEntity(messageDTO);
 		Message saved = repository.save(message);
 		return messageMapper.toDTO(saved);
@@ -53,7 +56,6 @@ public class MessageService implements MessageServiceInterface {
 		repository.delete(message);
 	}
 
-
 	public MessageDTO editMessage(UUID id, MessageDTO messageDTO) {
 		Message message = repository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Message not found"));
@@ -66,9 +68,22 @@ public class MessageService implements MessageServiceInterface {
 			throw new BadRequestException("Cannot edit message");
 		}
 
+		validateContent(messageDTO.getContent());
+
 		message.setContent(messageDTO.getContent());
 		Message updated = repository.save(message);
 		return messageMapper.toDTO(updated);
 	}
 
+	private void validateSender(String sender) {
+		if (sender == null || sender.trim().isEmpty() || sender.length() > 20) {
+			throw new BadRequestException("Username must be 1 to 20 characters long ");
+		}
+	}
+
+	private void validateContent(String content) {
+		if (content == null || content.trim().isEmpty() || content.length() > 400) {
+			throw new BadRequestException("Message content must be between 1 and 400 characters");
+		}
+	}
 }
